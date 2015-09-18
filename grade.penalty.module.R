@@ -204,10 +204,14 @@ compute.gpa.binned.grades <- function(data,nbins=10)
     tmin <- min_gpao+binsize*(i-1)
     tmax <- tmin+binsize
     ind        <- data$GPAO > tmin & data$GPAO < tmax
-    meangpa[i] <- mean(data$GPAO[ind])
-    meangd[i]  <- mean(data$GRD_PTS_PER_UNIT[ind])
-    segd[i]    <- sd(data$GRD_PTS_PER_UNIT[ind])/sqrt(sum(ind))
     
+    #Grade penalty mean and SE are computed by bootstrap by default.
+    meangpa[i] <- mean(data$GPAO[ind])
+    #meangd[i]  <- mean(data$GRD_PTS_PER_UNIT[ind])
+    #segd[i]    <- sd(data$GRD_PTS_PER_UNIT[ind])/sqrt(sum(ind))
+    temp <- bootstrap.bin.gpao(data$GRD_PTS_PER_UNIT[ind])
+    meangd[i]  <- temp$mn
+    segd[i]    <- temp$se
     
     
   }
