@@ -11,6 +11,7 @@
 #          REGRESSION  - Run a basic linear regression, return the coefficient on the gender term.
 #          MATCHING    - Run a matching analysis to compare grades of matched males and females.
 #OUTPUTS : Plots sent to grade.penalty.pdf in the CWD.
+#NOTES   : Uses optmatch package (https://cran.r-project.org/web/packages/optmatch/index.html) with MATCHING=TRUE
 #EXAMPLE: out <- grade.penalty(sr,sc,'PHYSICS',135,REGRESSION=TRUE,MATCHING=TRUE)
 #####################################################################################
 grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALSE,REGRESSION=FALSE,MATCHING=FALSE)
@@ -38,11 +39,9 @@ grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALS
   ltitle1 <- 'males: '
   ltitle2 <- 'females: '
   
-  #Compute the aggregate Cohen's d on the grade penalty
   gpm_agg <- gm$GRD_PTS_PER_UNIT-gm$GPAO
   gpf_agg <- gf$GRD_PTS_PER_UNIT-gf$GPAO
-  #chd     <- cohen.d(gpm_agg,gpf_agg,pooled=TRUE)
-
+ 
   #Compute and plot the binned grade penalty
   fem.binned <- compute.gpa.binned.grades(gf,15)
   mal.binned <- compute.gpa.binned.grades(gm,15)
@@ -50,24 +49,45 @@ grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALS
   title <- paste(SUBJECT,CATALOG_NBR,"(","N = ",nst,")",sep=" ")
   if (length(terms) == 1){title <- paste(title,'(',data$TERM_DESCRSHORT[1],')',sep=" ")}
 
+  #turn on the PDF device if PDF output is requested.
+  if (PDF == TRUE){pdf(paste(SUBJECT,CATALOG_NBR,'.pdf',sep=""),width=11,height=7)}
+  
   plot.binned.grades(mal.binned,title,col='black')
-  lines(c(0,4),c(0,4))
+  lines(c(0,4),c(0,4)) #The one-to-one line
   plot.binned.grades(fem.binned,title,col='red')
 
+  dda <- compute.overall.grade.penalty(data)
   ddm <- signif(compute.overall.grade.penalty(gm),3)
   ddf <- signif(compute.overall.grade.penalty(gf),3)
 
   text(1,3.75,'SIMPLE GRADE PENALTY',pos=4)
   text(1,3.5,paste(ltitle1,ddm$mn,'+/-',ddm$se,sep=" "),pos=4)
   text(1,3.25,paste(ltitle2,ddf$mn,'+/-',ddf$se,sep=" "),col='red',pos=4)
-  #text(1,3.0,paste('Cohen d = ',signif(as.numeric(chd$estimate),3),'[',
-  #               signif(as.numeric(chd$conf.int[1]),3),',',
-  #               signif(as.numeric(chd$conf.int[2]),3),']',sep=""),pos=4)
 
+  #These are results which will be set in a data frame and output.
+  N <- nst
+  N_FEMALES  <- length(which(f))
+  N_MALES    <- length(which(m))
+  MN_ALL     <- dda$mn
+  SE_ALL     <- dda$se
+  MN_MALES   <- ddm$mn
+  SE_MALES   <- ddm$se
+  MN_FEMALES <- ddf$mn
+  SE_FEMALES <- ddf$se
+  
+  out <- data.frame(SUBJECT,CATALOG_NBR,N,MN_ALL,SE_ALL,N_FEMALES,N_MALES,MN_MALES,SE_MALES,MN_FEMALES,SE_FEMALES)
+  
+  
 #Done making the basic plot, now get fancier if requested.
+#Do matching, print result to plot, add to output table.
 if (MATCHING == TRUE)
 {  
   gg <- matching.analysis(data)
+  MATCHED_MEAN_MALES   <- mean(gg$gpenm)
+  MATCHED_SE_MALES     <- sd(gg$gpenm)/sqrt(length(gg$gpenm))
+  MATCHED_MEAN_FEMALES <- mean(gg$gpenf)
+  MATCHED_SE_FEMALES   <- sd(gg$gpenf)/sqrt(length(gg$gpenf))
+  
   mmn <- signif(mean(gg$gpenm),3)
   mse <- signif(sd(gg$gpenm)/sqrt(length(gg$gpenm)),3)
   fmn <- signif(mean(gg$gpenf),3)
@@ -76,17 +96,25 @@ if (MATCHING == TRUE)
   text(1,2.75,'MATCHED MEAN GRADE:',pos=4)
   text(1,2.5,paste(ltitle1,mmn,'+/-',mse,sep=" "),pos=4)
   text(1,2.25,paste(ltitle2,fmn,'+/-',fse,sep=" "),col='red',pos=4)
-  #text(1,2.0,paste('Cohen d = ',signif(as.numeric(chd$estimate),3),'[',
-  #                 signif(as.numeric(chd$conf.int[1]),3),',',
-  #                 signif(as.numeric(chd$conf.int[2]),3),']',sep=""),pos=4)
+  
+  out <- data.frame(out,MATCHED_MEAN_MALES,MATCHED_SE_MALES,MATCHED_MEAN_FEMALES,MATCHED_SE_FEMALES)
 }
 
-
+#Do the regression and add the coefficient on SEX (and its SE) to the output
 if (REGRESSION == TRUE)
 {
  uber_reg <- grade.regression(data)
- print(summary(uber_reg))
- }
+ #print(summary(uber_reg))
+ res <- summary(uber_reg)
+ SEX_REG    <- res$coefficients[3,1]
+ SEX_REG_SE <- res$coefficients[3,2]
+ text(1,3.0,paste('SEX_REG_COEFF:',signif(SEX_REG,3),'+/-',signif(SEX_REG_SE,3)),pos=4)
+ out <- data.frame(out,SEX_REG,SEX_REG_SE)
+}
+  
+  if (PDF == TRUE){dev.off()}
+  return(out)
+  
 }
 #####################################################################################
 #Run a simple grade regression,wary of all the standard assumptions
