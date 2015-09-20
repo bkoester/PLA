@@ -29,6 +29,8 @@ course.persistence.setup <- function(sr,sc,SUBJECT1,SUBJECT2,CATALOG_NBR1,CATALO
        (sc$SUBJECT == SUBJECT2 & sc$CATALOG_NBR == CATALOG_NBR2)
   sc <- sc[which(e),]
   
+  if (PDF == TRUE){pdf(paste('CP_',SUBJECT1,CATALOG_NBR1,'_',SUBJECT2,CATALOG_NBR2,'.pdf',sep=""),width=11,height=11)}
+  
   if (TYPE == 'SEX')
   {
     e    <- sr$SEX == GROUP1 | sr$SEX == GROUP2
@@ -55,6 +57,7 @@ course.persistence.setup <- function(sr,sc,SUBJECT1,SUBJECT2,CATALOG_NBR1,CATALO
     
   }
   
+  if (PDF == TRUE){dev.off()}
   
 }
 
