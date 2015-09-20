@@ -1,6 +1,6 @@
 #####################################################################################
 #
-#FUNCTION: course.persistence
+#FUNCTION: course.persistence.setup
 #PURPOSE : Compute course-to-course persistence for two comparison groups
 #INPUTS  : 
 #          sc           - full student course table
@@ -15,10 +15,13 @@
 #          GROUP2       - corresponding to TYPE: the name of the group2 in the TYPE field to exame
 #          PDF          - Write plots to PDF. Default is TRUE. Plots go to 'course_portrain.pdf' in CWD.
 #OUTPUTS : 
-#EXAMPLE: 
+#EXAMPLE: hh <- course.persistence.setup(sr,sc,'PHYSICS','PHYSICS',140,240,TITLE='Physics 140 -- > 240: Gender')
+#         hh <- course.persistence.setup(sr,sc,'PHYSICS','PHYSICS',140,240,TYPE='MAJOR1_DEPT',
+#                                               GROUP1='Physics Department',GROUP2='Chemistry Department',
+#                                               TITLE='Physics 140 -- > 240: MAJOR')
 #####################################################################################
 
-course.persistence <- function(sr,sc,SUBJECT1,SUBJECT2,CATALOG_NBR1,CATALOG_NBR2,TITLE='',TYPE='SEX',
+course.persistence.setup <- function(sr,sc,SUBJECT1,SUBJECT2,CATALOG_NBR1,CATALOG_NBR2,TITLE='',TYPE='SEX',
                                GROUP1='F',GROUP2='M',PDF=FALSE)
 {
   
@@ -26,7 +29,7 @@ course.persistence <- function(sr,sc,SUBJECT1,SUBJECT2,CATALOG_NBR1,CATALOG_NBR2
        (sc$SUBJECT == SUBJECT2 & sc$CATALOG_NBR == CATALOG_NBR2)
   sc <- sc[which(e),]
   
-  IF (TYPE == 'SEX')
+  if (TYPE == 'SEX')
   {
     e    <- sr$SEX == GROUP1 | sr$SEX == GROUP2
     sr   <- sr[which(e),]
@@ -34,10 +37,23 @@ course.persistence <- function(sr,sc,SUBJECT1,SUBJECT2,CATALOG_NBR1,CATALOG_NBR2
     IND1 <- data$SEX == GROUP1
     IND2 <- data$SEX == GROUP2
     
-    compute.course.persistence(data,IND1,IND2,CATALOG_NBR1,CATALOG_NBR2,SUBJECT1,SUBJECT2,'Persistence by Gender')
+    compute.course.persistence(data,IND1,IND2,CATALOG_NBR1,CATALOG_NBR2,SUBJECT1,SUBJECT2,TITLE)
+    legend(0,1,c(GROUP1,GROUP2),text.col=c('black','red'))
     
   }
   
+  if (TYPE == 'MAJOR1_DEPT')
+  {
+    e    <- sr$MAJOR1_DEPT == GROUP1 | sr$MAJOR1_DEPT == GROUP2
+    sr   <- sr[which(e),]
+    data <- merge(sc,sr,by='ANONID',all.x=TRUE)
+    IND1 <- data$MAJOR1_DEPT == GROUP1
+    IND2 <- data$MAJOR2_DEPT == GROUP2
+    
+    compute.course.persistence(data,IND1,IND2,CATALOG_NBR1,CATALOG_NBR2,SUBJECT1,SUBJECT2,TITLE)
+    legend(0,1,c(GROUP1,GROUP2),text.col=c('black','red'))
+    
+  }
   
   
 }
@@ -49,7 +65,7 @@ course.persistence <- function(sr,sc,SUBJECT1,SUBJECT2,CATALOG_NBR1,CATALOG_NBR2
 #FUNCTION: compute.course.persistence
 #PURPOSE : Compute course-to-course persistence for two comparison groups
 #INPUTS  : 
-#          sc           - full student course table
+#          data         - full student course table
 #          IND1         - indices of input SC table for comparison group 1 (for instance, all females)
 #          IND2         - indices of input SC table for comparison group 2 (for instance, all males)
 #          SUBJECT1     - course subject 1
@@ -61,7 +77,7 @@ course.persistence <- function(sr,sc,SUBJECT1,SUBJECT2,CATALOG_NBR1,CATALOG_NBR2
 #OUTPUTS : Plots sent to persistence.pdf in the CWD.
 #EXAMPLE: 
 #####################################################################################
-compute.course.persistence <- function(sc,IND1,IND2,CATALOG_NBR1,CATALOG_NBR2,SUBJECT1,SUBJECT2,TITLE,nonGRADE=FALSE)
+compute.course.persistence <- function(data,IND1,IND2,CATALOG_NBR1,CATALOG_NBR2,SUBJECT1,SUBJECT2,TITLE,nonGRADE=FALSE)
 {
  
   outm <- compute.persistence(data[IND1,],CATALOG_NBR1,CATALOG_NBR2,SUBJECT1,SUBJECT2,nonGRADE=nonGRADE)
@@ -71,7 +87,7 @@ compute.course.persistence <- function(sc,IND1,IND2,CATALOG_NBR1,CATALOG_NBR2,SU
   
   plot(outm$grade,outm$gfrac,ylim=c(0,1.0),
      xlab=xlab,pch=19,ylab='Fraction',
-     main=title)
+     main=TITLE)
   points(outf$grade,outf$gfrac,pch=19,col='red')
   #add error bars
   for (k in 1:length(outf$gfrac))
@@ -178,6 +194,7 @@ remove.duplicates <- function(data,keep='NONE',verbose=FALSE)
 {
   
   #Sort grades by ID, then TERM.
+ 
   data       <- data[order(data$ANONID,data$TERM), ]
   data$count <- sequence(rle(as.vector(data$ANONID))$lengths)
   
@@ -196,7 +213,7 @@ remove.duplicates <- function(data,keep='NONE',verbose=FALSE)
   }    
   else
   {
-    nid    <- length(data$EMPLID[!duplicated(data$EMPLID)])
+    nid    <- length(data$ANONID[!duplicated(data$ANONID)])
     nstart <- which(data$count == 1)
     
     kdup   <- mat.or.vec(ntot,1)
