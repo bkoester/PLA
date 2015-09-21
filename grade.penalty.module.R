@@ -10,11 +10,12 @@
 #          PDF         - Write plots to PDF. Default is TRUE. Plots go to 'course_portrain.pdf' in CWD.
 #          REGRESSION  - Run a basic linear regression, return the coefficient on the gender term.
 #          MATCHING    - Run a matching analysis to compare grades of matched males and females.
+#          GENDER      - Show the grade penalty plot split by gender (default is TRUE)
 #OUTPUTS : Plots sent to grade.penalty.pdf in the CWD.
 #NOTES   : Uses optmatch package (https://cran.r-project.org/web/packages/optmatch/index.html) with MATCHING=TRUE
 #EXAMPLE: out <- grade.penalty(sr,sc,'PHYSICS',135,REGRESSION=TRUE,MATCHING=TRUE)
 #####################################################################################
-grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALSE,REGRESSION=FALSE,MATCHING=FALSE)
+grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALSE,REGRESSION=FALSE,MATCHING=FALSE,GENDER=TRUE)
 {  
   #SELECT the TERMS
   e    <- sc$SUBJECT == SUBJECT & 
@@ -45,17 +46,26 @@ grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALS
   #Compute and plot the binned grade penalty
   fem.binned <- compute.gpa.binned.grades(gf,15)
   mal.binned <- compute.gpa.binned.grades(gm,15)
-
+  all.binned <- compute.gpa.binned.grades(data,15)
+  
   title <- paste(SUBJECT,CATALOG_NBR,"(","N = ",nst,")",sep=" ")
   if (length(terms) == 1){title <- paste(title,'(',data$TERM_DESCRSHORT[1],')',sep=" ")}
 
   #turn on the PDF device if PDF output is requested.
   if (PDF == TRUE){pdf(paste(SUBJECT,CATALOG_NBR,'.pdf',sep=""),width=11,height=7)}
   
-  plot.binned.grades(mal.binned,title,col='black')
+  if (GENDER == TRUE)
+  {
+    plot.binned.grades(mal.binned,title,col='black')
+    plot.binned.grades(fem.binned,title,col='red')
+  }
+  else 
+  {
+    plot.binned.grades(all.binned,title,col='black')
+  }
   lines(c(0,4),c(0,4)) #The one-to-one line
-  plot.binned.grades(fem.binned,title,col='red')
-
+  
+  #Compute aggregate GPs
   dda <- compute.overall.grade.penalty(data)
   ddm <- signif(compute.overall.grade.penalty(gm),3)
   ddf <- signif(compute.overall.grade.penalty(gf),3)
