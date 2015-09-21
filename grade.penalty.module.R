@@ -11,7 +11,7 @@
 #          REGRESSION  - Run a basic linear regression, return the coefficient on the gender term.
 #          MATCHING    - Run a matching analysis to compare grades of matched males and females.
 #          GENDER      - Show the grade penalty plot split by gender (default is TRUE)
-#OUTPUTS : Plots sent to grade.penalty.pdf in the CWD.
+#OUTPUTS : Plots sent to grade.penalty.pdf in the CWD. test.
 #NOTES   : Uses optmatch package (https://cran.r-project.org/web/packages/optmatch/index.html) with MATCHING=TRUE
 #EXAMPLE: out <- grade.penalty(sr,sc,'PHYSICS',135,REGRESSION=TRUE,MATCHING=TRUE)
 #####################################################################################
