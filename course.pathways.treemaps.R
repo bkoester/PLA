@@ -3,7 +3,7 @@
 #2) What do these students ultimately major in?
 
 #FUNCTION: course.pathway
-#PURPOSE : To analyze, present basic analysis of the student's courses and his/her major
+#PURPOSE : To analyze, present basic analysis of the student's courses and his/her major given enrollment in course=(SUBJECT,CATALOG_NBR)
 #INPUTS  : sr - student record table
 #          sc - student course table
 #          SUBJECT     - course subject
@@ -13,82 +13,57 @@
 #          PDF         - Write plots to PDF. Default is TRUE. Plots go to 'course_pathways_treemap.pdf' in CWD.
 #PACKAGES: Treemap
 #OUTPUTS : Plots sent to course_pathway_treemap.pdf in the CWD.
-# example: course.pathway(sr,sc,"PHYSICS",140,TERM_RANGE=c(132,156), PDF=FALSE)
+#EXAMPLE: course.pathway(sr,sc,"PHYSICS",140,TERM_RANGE=c(132,156), PDF=FALSE)
 #sr<-student.record.anon.MOOC.FA.2015.orig
 #sc<-student.course.anon.MOOC.FA.2015.orig
-
 #####################################################################################
 
-course.pathway <- function(sr,sc,SUBJECT,CATALOG_NBR,
-                            TERM_RANGE=c(132,156),
-                            PDF=TRUE)
-    
-# testing start
-# SUBJECT<-"PHYSICS"
-#CATALOG_NBR<-140
-#TERM_RANGE=c(142,156)
-#PDF <- TRUE
-# course.pathway(sr,sc,"PHYSICS",140,TERM_RANGE=c(122,156), PDF=TRUE)
-
-# testing end
-    
+course.pathway <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(132,156),PDF=TRUE)
 {
-    library(treemap)
+    
+  library(treemap)
   
   ################################################################
   #1)  What courses do students who take this course take before, during, and after?
   
   
   #Get all unique ANONID of students who took this course in the TERM_RANGE
-  
-  e <- sc$SUBJECT == SUBJECT & sc$CATALOG_NBR == CATALOG_NBR & sc$TERM >= TERM_RANGE[1] & sc$TERM <= TERM_RANGE[2]
-
+  e <- sc$SUBJECT == SUBJECT & sc$CATALOG_NBR == CATALOG_NBR & 
+       sc$TERM >= TERM_RANGE[1] & sc$TERM <= TERM_RANGE[2]
   st <- unique(sc$ANONID[which(e)])
+  scc <- sc[which(e),c("ANONID","TERM")]
+  names(scc) <- c("ANONID","TERM2")
+  
 
-  
-  
-  #Reduce original sc to only those who took the course under consideration
+  #Reduce original sc to only those who took the course under consideration, 
   sc.m<-sc[sc$ANONID %in% st,c( "ANONID","SUBJECT","CATALOG_NBR","GRD_PTS_PER_UNIT","GPAO","DIV","TERM")]
-
+  sc.m <- merge(sc.m,scc,by='ANONID',all.x=TRUE)
+  SEQTERM    <- mat.or.vec(length(sc.m$ANONID),1)
+  sc.m <- data.frame(sc.m,SEQTERM)
+  
+  eb   <- which(sc.m$TERM < sc.m$TERM2)
+  ea   <- which(sc.m$TERM > sc.m$TERM2)
+  es   <- which(sc.m$TERM == sc.m$TERM2)
+  lenb <- length(eb)
+  lena <- length(ea)
+  lens <- length(es)
+  
+  sc.m$SEQTERM[eb] <- 1
+  sc.m$SEQTERM[ea] <- 2
   
   #Add a new column of subject + course number
   sc.m$course <-paste(sc.m$SUBJECT, sc.m$CATALOG_NBR,sep = " ")
-
+  b           <- sc.m$SUBJECT != SUBJECT & sc.m$CATALOG_NBR != CATALOG_NBR
+  sc.m        <- sc.m[which(b),]
   
-  list.b<-data.frame( SUBJECT=character(),CATALOG_NBR=numeric(),
-                                 GRD_PTS_PER_UNIT=numeric(), GPAO=numeric(),
-                                  DIV=character())
-  list.s<-data.frame( ANONID=numeric(), SUBJECT=character(),CATALOG_NBR=numeric(),
-                      GRD_PTS_PER_UNIT=numeric(), GPAO=numeric(),
-                      DIV=character(), TERM=numeric())
-  list.a<-data.frame( ANONID=numeric(), SUBJECT=character(),CATALOG_NBR=numeric(),
-                      GRD_PTS_PER_UNIT=numeric(), GPAO=numeric(),
-                      DIV=character(), TERM=numeric())
-
-  
-  for(i in st){
-      sc.m.a<-subset(sc.m, ANONID==i)
-      l<-dim(sc.m.a)[1]
-      tm<-sc.m.a$TERM[sc.m.a$SUBJECT == SUBJECT & sc.m.a$CATALOG_NBR == CATALOG_NBR]
-      
-      for(j in 1:l){
-          if (sc.m.a$TERM[j]<tm[1]) 
-          {list.b<-rbind(list.b, sc.m.a[j,c( "SUBJECT","CATALOG_NBR","GRD_PTS_PER_UNIT","GPAO","DIV")])} 
-    
-          if (sc.m.a$TERM[j]==tm[1] & (sc.m.a$SUBJECT[j] != SUBJECT & sc.m.a$CATALOG_NBR[j] != CATALOG_NBR)) 
-          {list.s<-rbind(list.s, sc.m.a[j,])} 
-          
-         if (sc.m.a$TERM[j]>tm[1]) 
-          {list.a<-rbind(list.a, sc.m.a[j,])} 
-      
-      }
-  }
-  
-#RStudioGD()
+  list.b <- sc.m[which(sc.m$SEQTERM == 1),]
+  list.s <- sc.m[which(sc.m$SEQTERM == 0),]
+  list.a <- sc.m[which(sc.m$SEQTERM == 2),]
+ 
+#Send the structures to the course treemap plotting routine.
 pdf.index<-as.character(1)  
 str.b=paste('Grades in Courses Taken Before',SUBJECT ,CATALOG_NBR, sep=" ") 
 basic.course.treemap(list.b,SUBNAME=str.b,BYDIV=TRUE,PDF,pdf.index)
-
 
 pdf.index<-as.character(2) 
 str.s=paste('Grades in Courses Taken at the Same Time',SUBJECT ,CATALOG_NBR, sep=" ") 
@@ -106,16 +81,23 @@ basic.course.treemap(list.a,SUBNAME=str.a,BYDIV=TRUE,PDF,pdf.index)
 pdf.index<-as.character(4) 
 str <- paste("Students Who Took ",SUBJECT,CATALOG_NBR, sep=" ")
 basic.major.treemap(sr,sc,SUBJECT,CATALOG_NBR,SUBNAME=str,
-                                TERM_RANGE,MAJOR_NUM=1,PDF,pdf.index)
+                                TERM_RANGE=TERM_RANGE,MAJOR_NUM=1,PDF,pdf.index)
 
 
 }
 
-
-###
-####
-
-basic.course.treemap <- function(data,SUBNAME,BYDIV=TRUE,PDF=TRUE,pdf.index)
+#####################################################################################
+#FUNCTION: basic.course.treemap
+#PURPOSE : Create data structure and plot treemap of courses.
+#INPUTS  : data        - a list of student-course pairs to be consolidated into a treemap. 
+#          SUBNAME     - A title to append to the plot
+#          PDF         - Write plots to PDF. Default is TRUE. Plots go to 'course_pathways_treemap.pdf' in CWD.
+#          BYDIV       - TRUE by default. Include course division in plot hierarchy. FALSE clusters courses by level (100,200, etc)
+#PACKAGES: Treemap
+#OUTPUTS : Plots sent to course_pathway_treemap.pdf in the CWD.
+#EXAMPLE: basic.course.treemap(data,SUBNAME='Course Treemap',BYDIV=TRUE,PDF=TRUE,pdf.index))
+#####################################################################################
+basic.course.treemap <- function(data,SUBNAME='Course Treemap',BYDIV=TRUE,PDF=TRUE,pdf.index)
 {
     
     library(treemap) 
@@ -196,7 +178,9 @@ basic.course.treemap <- function(data,SUBNAME,BYDIV=TRUE,PDF=TRUE,pdf.index)
     
     e   <- out$freq > 250
     out <- out[order(-out$freq),]
-
+    e   <- out$grade > 2.5 & out$grade < 4.0
+    out <- out[which(e),]
+    
     if (PDF == FALSE){
     treemap(out,c("division","crse"),vSize='freq',palette='Spectral',
             vColor='grade',type='manual',fontsize.labels=c(30,10),range=c(2.5,4.0),
@@ -215,7 +199,22 @@ basic.course.treemap <- function(data,SUBNAME,BYDIV=TRUE,PDF=TRUE,pdf.index)
     #return(out)
 }
 
-###
+#####################################################################################
+#FUNCTION: basic.major.treemap
+#PURPOSE : Create data structure and plot treemap of courses.
+#INPUTS  : sr          - a student record table
+#          sc          - a student course table
+#          SUBJECT     - subject of course for which majors treemap will be built          
+#          CATALOG_NBR - catalog nbr of course for which majors treemap will be built
+#          SUBNAME     - A title to append to the plot
+#          TERM_RANGE  - terms to consider
+#          MAJOR_NUM   - which of the three major columns to consider. 1 is the default
+#          PDF         - Write plots to PDF. Default is TRUE. Plots go to 'course_pathways_treemap.pdf' in CWD.
+#          BYDIV       - TRUE by default. Include course division in plot hierarchy. FALSE clusters courses by level (100,200, etc)
+#PACKAGES: Treemap
+#OUTPUTS : Plots sent to course_pathway_treemap.pdf in the CWD.
+#EXAMPLE: basic.major.treemap(data,SUBNAME='Course Treemap',BYDIV=TRUE,PDF=TRUE,pdf.index))
+#####################################################################################
 basic.major.treemap <- function(sr,sc,SUBJECT,CATALOG_NBR,SUBNAME="ALL",
                                 TERM_RANGE=c(4,156),MAJOR_NUM=1,PDF=TRUE,pdf.index)
 {
@@ -230,6 +229,7 @@ basic.major.treemap <- function(sr,sc,SUBJECT,CATALOG_NBR,SUBNAME="ALL",
     DDIV <- read.dept.division()
     data <- data[,names(data) %in% c("EMPLID","SUBJECT","CATALOG_NBR","GRD_PTS_PER_UNIT","GPAO",
                                      "MAJOR1_DEPT","MAJOR2_DEPT","MAJOR3_DEPT")]
+    View(data)
     if (MAJOR_NUM == 1)
     {
         data <- merge(data,DDIV,by.x='MAJOR1_DEPT',by.y='DEPT',all.x=TRUE)
@@ -280,7 +280,7 @@ basic.major.treemap <- function(sr,sc,SUBJECT,CATALOG_NBR,SUBNAME="ALL",
         start_ind <- nstart[i]
         if (i < ncrse){stop_ind  <- nstart[i+1]-1}
         if (i == ncrse){stop_ind <- ntot}
-        
+           
         ind  <- c(start_ind:stop_ind)
         
         division[i] <- as.character(data$division[start_ind])
@@ -303,9 +303,10 @@ basic.major.treemap <- function(sr,sc,SUBJECT,CATALOG_NBR,SUBNAME="ALL",
     }
     
     out <- data.frame(major,division,grade,grade_penalty,freq)
-    e   <- out$freq > 1000
+    e   <- out$grade > 2.5 & out$grade < 4.0
+    out <- out[which(e),]
     
-
+    
     
     if (PDF == FALSE){treemap(out,c("division","major"),vSize='freq',palette='Spectral',overlap.labels=1,
             vColor='grade',type='manual',fontsize.labels=c(50,10),range=c(2.5,4.0),
