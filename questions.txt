@@ -1,0 +1,24 @@
+Basic questions driving code:
+
+1. Course portraits
+Tim: Who takes this class? Displayed historically, for categories like which
+schools and colleges, what year are they?
+Tim: What grades do people get? Again, the historical view is interesting, and there are many ways to display it. Should it be broken out for different student groups?
+BEN: What predicts performance? GPAO, grade penalty, residuals vs. standardized English and Math grades, maybe residuals vs. NS, SS, HU GPA? Expose the idea of better and worse than expected performance. 2. Course pathways
+Both bar charts and perhaps treeplots Galina: What courses do students who take this course take before, during, and
+after?
+Galina: What do these students ultimately major in?
+3. Tim: How am I doing – displays of the relative performance of this student vs. others: make one a GPA oriented absolute grade plot and the other a relative oriented GAR plot, allow comparison to all students, or to students taking a major, compare just to the students you took it with or to all students in that course…This should also include ranking by both means, against both groups.
+4. Course impact/influence How does performance in one course affect another? Lots to explore here. There are often strong correlations – are any special? There are surely cases where virtually nothing predicts grades, because everyone does very well, or perhaps because the course is really unusual. Instructor impact measures?
+Persistence vs. correlates in sequences and otherwise
+5. Tim: Grades and grading – grading and grade penalty patterns across disciplines and levels
+6. Major studies
+Tim: Patterns of enrollment vs. campus age, gender, etc. Ben: Treeplot Persistence from intro courses to majors/minors, basically what
+subgroup of the students taking intro courses become majors.
+Ben: Treeplot - Choose last course GPAO as final GPA All the courses the majors took. Comparing majors to non-majors, both at graduation and as they pass through campus. This is where we’ll use the ‘what did our majors take and how did they do’ figure.
+7. Program studies Ben: Matching analysis The evaluation engine, matching and outcomes comparisons
+Flows from interest to majors
+
+8. Tim/Gus - get some data together…. Behavior studies Characterizing behavior with clickstreams, and other data
+Analyzing performance in different course elements using internal grades and
+their relation to global performance.
