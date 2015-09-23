@@ -13,12 +13,12 @@
 #          PDF         - Write plots to PDF. Default is TRUE. Plots go to 'course_pathways_treemap.pdf' in CWD.
 #PACKAGES: Treemap
 #OUTPUTS : Plots sent to course_pathway_treemap.pdf in the CWD.
-#EXAMPLE: course.pathway(sr,sc,"PHYSICS",140,TERM_RANGE=c(132,156), PDF=FALSE)
+#EXAMPLE: course.pathway.treemaps(sr,sc,"PHYSICS",140,TERM_RANGE=c(132,156), PDF=FALSE)
 #sr<-student.record.anon.MOOC.FA.2015.orig
 #sc<-student.course.anon.MOOC.FA.2015.orig
 #####################################################################################
 
-course.pathway <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(132,156),PDF=TRUE)
+course.pathway.treemaps <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(132,156),PDF=TRUE)
 {
   
   #Do some basic error checking
@@ -75,7 +75,8 @@ course.pathway <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(132,156),PDF=T
   
   #Add a new column of subject + course number
   sc.m$course <-paste(sc.m$SUBJECT, sc.m$CATALOG_NBR,sep = " ")
-  b           <- sc.m$SUBJECT != SUBJECT & sc.m$CATALOG_NBR != CATALOG_NBR
+  #b           <- sc.m$SUBJECT != SUBJECT & sc.m$CATALOG_NBR != CATALOG_NBR
+  b           <- sc.m$course != paste(SUBJECT, CATALOG_NBR,sep = " ")
   sc.m        <- sc.m[which(b),]
   
   list.b <- sc.m[which(sc.m$SEQTERM == 1),]

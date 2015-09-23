@@ -2,7 +2,7 @@
 #1) What courses do students who take this course take before, during, and after?
 #2) What do these students ultimately major in?
 
-#FUNCTION: course.pathway
+#FUNCTION: course.pathway.barplots
 #PURPOSE : To analyze, present basic analysis of the student's courses and his/her major
 #INPUTS  : sr - student record table
 #          sc - student course table
@@ -13,10 +13,10 @@
 #          PDF         - Write plots to PDF. Default is TRUE. Plots go to 'course_pathway_barplots.pdf' in CWD.
 #PACKAGES: 
 #OUTPUTS : Plots sent to course_pathway_barplots.pdf in the CWD.
-# example: course.pathway(sr,sc,"PHYSICS",140,TERM_RANGE=c(132,156), PDF=FALSE)
+# example: course.pathway.barplots(sr,sc,"PHYSICS",140,TERM_RANGE=c(132,156), PDF=FALSE)
 #####################################################################################
-course.pathway <- function(sr,sc,SUBJECT,CATALOG_NBR,
-                            TERM_RANGE=c(132,156),
+course.pathway.barplots <- function(sr,sc,SUBJECT,CATALOG_NBR,
+                            TERM_RANGE=c(100,156),
                             PDF=TRUE)
 {
   #Do some basic error checking
@@ -72,7 +72,8 @@ course.pathway <- function(sr,sc,SUBJECT,CATALOG_NBR,
   
   #Add a new column of subject + course number, and remove the course in question as we don't need it anymore.
   sc.m$course <-paste(sc.m$SUBJECT, sc.m$CATALOG_NBR,sep = " ")
-  b           <- sc.m$SUBJECT != SUBJECT & sc.m$CATALOG_NBR != CATALOG_NBR
+  #b           <- sc.m$SUBJECT != SUBJECT & sc.m$CATALOG_NBR != CATALOG_NBR
+  b           <- sc.m$course != paste(SUBJECT, CATALOG_NBR,sep = " ")
   sc.m        <- sc.m[which(b),]
   
   #Finally, take the subset of all courses taken in different order relative the course in question.
