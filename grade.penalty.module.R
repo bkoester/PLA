@@ -17,11 +17,40 @@
 #####################################################################################
 grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALSE,REGRESSION=FALSE,MATCHING=FALSE,GENDER=TRUE)
 {  
+  
+  #Do some basic error checking
+  if (dim(sr)[1] < 100)
+  {
+    print('student record too small or non-existent')
+    return()
+  }
+  if (dim(sc)[1] < 100)
+  {
+    print('student course to small or non-existent')
+    return()
+  }
+  if (TERM_RANGE[1] < 4 )
+  {
+    print('lower bound on term range must be >= 4')
+    return()
+  }
+  
   #SELECT the TERMS
   e    <- sc$SUBJECT == SUBJECT & 
           sc$CATALOG_NBR == CATALOG_NBR & 
           sc$TERM >= TERM_RANGE[1] & sc$TERM <= TERM_RANGE[2]
-
+  
+  if (length(which(e)) == 0 )
+  {
+    print("invalid subject and/or catalog number...or maybe your term range is too narrow")
+    return()
+  }
+  if (length(which(e)) < 10 )
+  {
+    print("less than 10 students in selected range!") 
+    return()
+  }
+  
   sc <- sc[which(e),]
   terms <- sc$TERM[!duplicated(sc$TERM)]
   nterms <- length(terms)

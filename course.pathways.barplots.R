@@ -18,17 +18,23 @@
 course.pathway <- function(sr,sc,SUBJECT,CATALOG_NBR,
                             TERM_RANGE=c(132,156),
                             PDF=TRUE)
-    
-# testing start
- #SUBJECT<-"PHYSICS"
-#CATALOG_NBR<-140
-#TERM_RANGE=c(142,156)
-#PDF <- TRUE
-# course.pathway(sr,sc,"PHYSICS",140,TERM_RANGE=c(152,156), PDF=TRUE)
-
-# testing end
-    
 {
+  #Do some basic error checking
+  if (dim(sr)[1] < 100)
+  {
+    print('student record too small or non-existent')
+    return()
+  }
+  if (dim(sc)[1] < 100)
+  {
+    print('student course to small or non-existent')
+    return()
+  }
+  if (TERM_RANGE[1] < 4 )
+  {
+    print('lower bound on term range must be >= 4')
+    return()
+  }
   
   ################################################################
   #1)  What courses do students who take this course take before, during, and after?
@@ -37,6 +43,12 @@ course.pathway <- function(sr,sc,SUBJECT,CATALOG_NBR,
   #Get all unique ANONID of students who took this course in the TERM_RANGE
   
   e <- sc$SUBJECT == SUBJECT & sc$CATALOG_NBR == CATALOG_NBR & sc$TERM >= TERM_RANGE[1] & sc$TERM <= TERM_RANGE[2]
+  if (length(which(e)) == 0)
+  {
+    print("invalid subject and/or catalog number")
+    return()
+  }
+  
   st <- unique(sc$ANONID[which(e)])
   scc <- sc[which(e),c("ANONID","TERM")]
   names(scc) <- c("ANONID","TERM2") #Add to each course in the sc the TERM (TERM2) that they took the course

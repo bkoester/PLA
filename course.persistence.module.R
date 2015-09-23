@@ -25,6 +25,18 @@ course.persistence.setup <- function(sr,sc,SUBJECT1,SUBJECT2,CATALOG_NBR1,CATALO
                                GROUP1='F',GROUP2='M',PDF=FALSE)
 {
   
+  #Do some basic error checking
+  if (dim(sr)[1] < 100)
+  {
+    print('student record too small or non-existent')
+    return()
+  }
+  if (dim(sc)[1] < 100)
+  {
+    print('student course to small or non-existent')
+    return()
+  }
+  
   e <- (sc$SUBJECT == SUBJECT1 & sc$CATALOG_NBR == CATALOG_NBR1) | 
        (sc$SUBJECT == SUBJECT2 & sc$CATALOG_NBR == CATALOG_NBR2)
   sc <- sc[which(e),]
