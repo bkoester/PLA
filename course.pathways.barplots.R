@@ -11,16 +11,12 @@
 #          TERM_RANGE  - lower and upper limits of terms to be analyzed
 #          DEPT        - Which majors to consider for TERM-by-TERM statistics (Physics is default)
 #          PDF         - Write plots to PDF. Default is TRUE. Plots go to 'course_pathway_barplots.pdf' in CWD.
-#PACKAGES: Treemap
+#PACKAGES: 
 #OUTPUTS : Plots sent to course_pathway_barplots.pdf in the CWD.
 # example: course.pathway(sr,sc,"PHYSICS",140,TERM_RANGE=c(132,156), PDF=FALSE)
-#sr<-student.record.anon.MOOC.FA.2015.orig
-#sc<-student.course.anon.MOOC.FA.2015.orig
 #####################################################################################
-
-
 course.pathway <- function(sr,sc,SUBJECT,CATALOG_NBR,
-                            TERM_RANGE=c(152,156),
+                            TERM_RANGE=c(132,156),
                             PDF=TRUE)
     
 # testing start
@@ -41,47 +37,41 @@ course.pathway <- function(sr,sc,SUBJECT,CATALOG_NBR,
   #Get all unique ANONID of students who took this course in the TERM_RANGE
   
   e <- sc$SUBJECT == SUBJECT & sc$CATALOG_NBR == CATALOG_NBR & sc$TERM >= TERM_RANGE[1] & sc$TERM <= TERM_RANGE[2]
-
   st <- unique(sc$ANONID[which(e)])
+  scc <- sc[which(e),c("ANONID","TERM")]
+  names(scc) <- c("ANONID","TERM2") #Add to each course in the sc the TERM (TERM2) that they took the course
   
-  
-  #Reduce original sc to only those who took the course under consideration
+  #Reduce original sc to only those who took the course under consideration, appended with the term they took the course
   sc.m<-sc[sc$ANONID %in% st,c( "ANONID","SUBJECT","CATALOG_NBR","TERM")]
-
+  sc.m <- merge(sc.m,scc,by='ANONID',all.x=TRUE)
   
-  #Add a new column of subject + course number
+  #Create a variable to keep track of whether they took a course before, during, or after the course in question
+  SEQTERM    <- mat.or.vec(length(sc.m$ANONID),1)
+  sc.m <- data.frame(sc.m,SEQTERM)
+  eb   <- which(sc.m$TERM < sc.m$TERM2)
+  ea   <- which(sc.m$TERM > sc.m$TERM2)
+  es   <- which(sc.m$TERM == sc.m$TERM2)
+  lenb <- length(eb)
+  lena <- length(ea)
+  lens <- length(es)
+  
+  sc.m$SEQTERM[eb] <- 1
+  sc.m$SEQTERM[ea] <- 2
+  
+  #Add a new column of subject + course number, and remove the course in question as we don't need it anymore.
   sc.m$course <-paste(sc.m$SUBJECT, sc.m$CATALOG_NBR,sep = " ")
-
+  b           <- sc.m$SUBJECT != SUBJECT & sc.m$CATALOG_NBR != CATALOG_NBR
+  sc.m        <- sc.m[which(b),]
   
-  list.b<-c() # list of courses taken before
-  list.s<-c() # list of courses taken at the same time
-  list.a<-c() # list of courses taken after
-
+  #Finally, take the subset of all courses taken in different order relative the course in question.
+  list.b <- sc.m[which(sc.m$SEQTERM == 1),names(sc.m) %in% ('course')]
+  list.s <- sc.m[which(sc.m$SEQTERM == 0),names(sc.m) %in% ('course')]
+  list.a <- sc.m[which(sc.m$SEQTERM == 2),names(sc.m) %in% ('course')]
   
-  for(i in st){
-      sc.m.a<-subset(sc.m, ANONID==i)
-      l<-dim(sc.m.a)[1]
-      tm<-sc.m.a$TERM[sc.m.a$SUBJECT == SUBJECT & sc.m.a$CATALOG_NBR == CATALOG_NBR]
-      
-      for(j in 1:l){
-          if (sc.m.a$TERM[j]<tm[1]) 
-          {list.b<-c(list.b, sc.m.a$course[j])} 
-    
-          if (sc.m.a$TERM[j]==tm[1] & (sc.m.a$SUBJECT[j] != SUBJECT & sc.m.a$CATALOG_NBR[j] != CATALOG_NBR)) 
-          {list.s<-c(list.s, sc.m.a$course[j])} 
-          
-          if (sc.m.a$TERM[j]>tm[1]) 
-          {list.a<-c(list.a, sc.m.a$course[j])} 
-      
-      }
-  }
-
 sum.b<-summary(as.factor(list.b))
 sum.b.o<-sum.b[order(-sum.b)]
 if (length(unique(list.b))>9){
 sum.b.o.10<-sum.b.o[c(1:10)]} else {sum.b.o.10<-sum.b.o}
-
-
 
 sum.s<-summary(as.factor(list.s))
 sum.s.o<-sum.s[order(-sum.s)]
