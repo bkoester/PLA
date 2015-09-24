@@ -10,12 +10,12 @@
 #          PDF         - Write plots to PDF. Default is TRUE. Plots go to 'course_portrain.pdf' in CWD.
 #          REGRESSION  - Run a basic linear regression, return the coefficient on the gender term.
 #          MATCHING    - Run a matching analysis to compare grades of matched males and females.
-#          GENDER      - Show the grade penalty plot split by gender (default is TRUE)
+#          GROUP       - GENDER by default. Set to NONE for aggregate, or one of student groups A,B,C,D,E,F,G
 #OUTPUTS : Plots sent to grade.penalty.pdf in the CWD. test.
 #NOTES   : Uses optmatch package (https://cran.r-project.org/web/packages/optmatch/index.html) with MATCHING=TRUE
-#EXAMPLE: out <- grade.penalty(sr,sc,'PHYSICS',135,REGRESSION=TRUE,MATCHING=TRUE)
+#EXAMPLE: out <- grade.penalty(sr,sc,'PHYSICS',135,GROUP='GENDER',REGRESSION=TRUE,MATCHING=TRUE)
 #####################################################################################
-grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALSE,REGRESSION=FALSE,MATCHING=FALSE,GENDER=TRUE)
+grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALSE,REGRESSION=FALSE,MATCHING=FALSE,GROUP='GENDER')
 {  
   
   #Do some basic error checking
@@ -33,6 +33,14 @@ grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALS
   {
     print('lower bound on term range must be >= 4')
     return()
+  }
+  if (GROUP != 'GENDER' & GROUP != 'NONE' & 
+      GROUP != 'A' & GROUP != 'B' & GROUP != 'C' &
+      GROUP != 'D' & GROUP != 'E' & GROUP != 'F' & GROUP != 'G')
+  {
+    print('group must be one of GENDER, NONE, A,B,C,D,E,F, or G')
+    return()
+    
   }
   
   #SELECT the TERMS
@@ -62,12 +70,32 @@ grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALS
 
   #Select the male and female subsets and compute the Cohen's D for the difference
   #in grade penatly between the two groups
-  m    <- data$SEX == 'M'
-  gm   <- data[m,]
-  f    <- data$SEX == 'F'
-  gf   <- data[f,]
-  ltitle1 <- 'males: '
-  ltitle2 <- 'females: '
+  if (GROUP == 'GENDER' | GROUP == "NONE")
+  {
+    m    <- data$SEX == 'M'
+    gm   <- data[m,]
+    f    <- data$SEX == 'F'
+    gf   <- data[f,]
+    ltitle1 <- 'males: '
+    ltitle2 <- 'females: '
+    SEG  <- mat.or.vec(length(data$ANONID),1)
+    SEG[f] <- 1
+    data <- data.frame(data,SEG)
+  }
+  
+  if (nchar(GROUP) == 1)
+  {
+    m    <- data$STDNT_GROUP1 == GROUP | data$STDNT_GROUP2 == GROUP
+    gm   <- data[which(m),]
+    f    <- data$STDNT_GROUP1 != GROUP & data$STDNT_GROUP2 != GROUP
+    gf   <- data[which(f),]
+  
+    ltitle1 <- paste('GROUP = ', GROUP,': ',sep="")
+    ltitle2 <- paste('GROUP != ',GROUP,': ',sep="")
+    SEG  <- mat.or.vec(length(data$ANONID),1)
+    SEG[f] <- 1
+    data <- data.frame(data,SEG)
+  }
   
   gpm_agg <- gm$GRD_PTS_PER_UNIT-gm$GPAO
   gpf_agg <- gf$GRD_PTS_PER_UNIT-gf$GPAO
@@ -83,7 +111,7 @@ grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALS
   #turn on the PDF device if PDF output is requested.
   if (PDF == TRUE){pdf(paste(SUBJECT,CATALOG_NBR,'.pdf',sep=""),width=11,height=7)}
   
-  if (GENDER == TRUE)
+  if (GROUP != 'NONE')
   {
     plot.binned.grades(mal.binned,title,col='black')
     plot.binned.grades(fem.binned,title,col='red')
@@ -105,16 +133,16 @@ grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALS
 
   #These are results which will be set in a data frame and output.
   N <- nst
-  N_FEMALES  <- length(which(f))
-  N_MALES    <- length(which(m))
+  N_GROUP2  <- length(which(f))
+  N_GROUP1    <- length(which(m))
   MN_ALL     <- dda$mn
   SE_ALL     <- dda$se
-  MN_MALES   <- ddm$mn
-  SE_MALES   <- ddm$se
-  MN_FEMALES <- ddf$mn
-  SE_FEMALES <- ddf$se
+  MN_GROUP1   <- ddm$mn
+  SE_GROUP1   <- ddm$se
+  MN_GROUP2 <- ddf$mn
+  SE_GROUP2 <- ddf$se
   
-  out <- data.frame(SUBJECT,CATALOG_NBR,N,MN_ALL,SE_ALL,N_FEMALES,N_MALES,MN_MALES,SE_MALES,MN_FEMALES,SE_FEMALES)
+  out <- data.frame(SUBJECT,CATALOG_NBR,N,MN_ALL,SE_ALL,N_GROUP2,N_GROUP1,MN_GROUP1,SE_GROUP1,MN_GROUP2,SE_GROUP2)
   
   
 #Done making the basic plot, now get fancier if requested.
@@ -122,10 +150,10 @@ grade.penalty <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(4,156),PDF=FALS
 if (MATCHING == TRUE)
 {  
   gg <- matching.analysis(data)
-  MATCHED_MEAN_MALES   <- mean(gg$gpenm)
-  MATCHED_SE_MALES     <- sd(gg$gpenm)/sqrt(length(gg$gpenm))
-  MATCHED_MEAN_FEMALES <- mean(gg$gpenf)
-  MATCHED_SE_FEMALES   <- sd(gg$gpenf)/sqrt(length(gg$gpenf))
+  MATCHED_MEAN_GROUP1   <- mean(gg$gpenm)
+  MATCHED_SE_GROUP1     <- sd(gg$gpenm)/sqrt(length(gg$gpenm))
+  MATCHED_MEAN_GROUP2 <- mean(gg$gpenf)
+  MATCHED_SE_GROUP2   <- sd(gg$gpenf)/sqrt(length(gg$gpenf))
   
   mmn <- signif(mean(gg$gpenm),3)
   mse <- signif(sd(gg$gpenm)/sqrt(length(gg$gpenm)),3)
@@ -136,7 +164,7 @@ if (MATCHING == TRUE)
   text(1,2.5,paste(ltitle1,mmn,'+/-',mse,sep=" "),pos=4)
   text(1,2.25,paste(ltitle2,fmn,'+/-',fse,sep=" "),col='red',pos=4)
   
-  out <- data.frame(out,MATCHED_MEAN_MALES,MATCHED_SE_MALES,MATCHED_MEAN_FEMALES,MATCHED_SE_FEMALES)
+  out <- data.frame(out,MATCHED_MEAN_GROUP1,MATCHED_SE_GROUP1,MATCHED_MEAN_GROUP2,MATCHED_SE_GROUP2)
 }
 
 #Do the regression and add the coefficient on SEX (and its SE) to the output
@@ -145,10 +173,10 @@ if (REGRESSION == TRUE)
  uber_reg <- grade.regression(data)
  #print(summary(uber_reg))
  res <- summary(uber_reg)
- SEX_REG    <- res$coefficients[3,1]
- SEX_REG_SE <- res$coefficients[3,2]
- text(1,3.0,paste('SEX_REG_COEFF:',signif(SEX_REG,3),'+/-',signif(SEX_REG_SE,3)),pos=4)
- out <- data.frame(out,SEX_REG,SEX_REG_SE)
+ GROUP_REG    <- res$coefficients[3,1]
+ GROUP_REG_SE <- res$coefficients[3,2]
+ text(1,3.0,paste('GROUP_REG_COEFF:',signif(GROUP_REG,3),'+/-',signif(GROUP_REG_SE,3)),pos=4)
+ out <- data.frame(out,GROUP_REG,GROUP_REG_SE)
 }
   
   if (PDF == TRUE){dev.off()}
@@ -171,7 +199,7 @@ grade.regression <- function(data)
   #View(data)
   #reformat things for the regression
   GRD_PTS_PER_UNIT        <- as.numeric(data$GRD_PTS_PER_UNIT)
-  SEX                     <- as.factor(data$SEX)
+  SEX                     <- as.factor(data$SEG)
   LAST_ACT_MATH_SCORE     <- as.numeric(data$LAST_ACT_MATH_SCORE)
   LAST_ACT_ENGL_SCORE     <- as.numeric(data$LAST_ACT_ENGL_SCORE)
   GPAO                    <- as.numeric(data$GPAO)
@@ -273,24 +301,24 @@ matching.analysis <- function(data)
     library(optmatch)
     print('matching')
     #Clean out problem areas
-    e         <- data$SEX != 'U' & 
-                 !is.na(data$LAST_ACT_MATH_SCORE) & !is.na(data$LAST_ACT_ENGL_SCORE) &
+    e         <- !is.na(data$LAST_ACT_MATH_SCORE) & !is.na(data$LAST_ACT_ENGL_SCORE) &
                  data$HSGPA > 0 
     data      <- data[which(e),]  
     
     #Define/coerce the matching variables.
-    SEX       <- mat.or.vec(length(data$ANONID),1)
-    e         <- data$SEX == 'F'
-    SEX[e]    <- 1
+    #SEG       <- mat.or.vec(length(data$ANONID),1)
+    #e         <- data$SEG == 1
+    #SEX[e]    <- 1
+    SEG       <- as.numeric(data$SEG)
     ACT.MATH  <- as.numeric(data$LAST_ACT_MATH_SCORE)
     ACT.ENGL  <- as.numeric(data$LAST_ACT_ENGL_SCORE)
     GRADE     <- as.numeric(data$GRD_PTS_PER_UNIT)
     GPAO      <- as.numeric(data$GPAO)
     HSGPA     <- as.numeric(data$HSGPA)
     ANONID    <- as.numeric(data$ANONID)
-    data      <- data.frame(ANONID,SEX,ACT.MATH,ACT.ENGL,GRADE,GPAO,HSGPA)
+    data      <- data.frame(ANONID,SEG,ACT.MATH,ACT.ENGL,GRADE,GPAO,HSGPA)
     #Supply matching propensity scores
-    model <- glm(SEX ~ ACT.MATH+ACT.ENGL+GPAO+HSGPA,family=binomial(),data=data)
+    model <- glm(SEG ~ ACT.MATH+ACT.ENGL+GPAO+HSGPA,family=binomial(),data=data)
     #...and execute the matching with a caliper set at 0.2 to increase speed...
      m1    <- fullmatch(match_on(model,caliper=0.2),data=data)
     
@@ -299,7 +327,7 @@ matching.analysis <- function(data)
     out <- data
     
     #And sort once for speed, computing mean grades for the matched groups
-    data       <- data[order(data$matches,data$SEX),] #This sort is crucial. Keeping the SEX makes sure that female is always index 1.
+    data       <- data[order(data$matches,data$SEG),] #This sort is crucial. Keeping the SEX makes sure that female is always index 1.
     data$count <- sequence(rle(as.vector(data$matches))$lengths)
     
     nid    <- length(data$matches[!duplicated(data$matches)])
