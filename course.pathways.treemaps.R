@@ -18,7 +18,7 @@
 #sc<-student.course.anon.MOOC.FA.2015.orig
 #####################################################################################
 
-course.pathway.treemaps <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(132,156),PDF=TRUE)
+course.pathway.treemaps <- function(sr,sc,SUBJECT,CATALOG_NBR,TERM_RANGE=c(100,156),PDF=TRUE)
 {
   
   #Do some basic error checking
