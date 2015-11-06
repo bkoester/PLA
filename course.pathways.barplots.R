@@ -136,9 +136,23 @@ barplot(sum.a.o.10,las=1,horiz=TRUE,xlab='Number of Courses',cex.names=0.5,
   allmajors <- c(as.character(sub$MAJOR1_DEPT),as.character(sub$MAJOR2_DEPT),as.character(sub$MAJOR3_DEPT))
   gg <- summary(as.factor(allmajors))
   gg <- gg[order(-gg)]
-if (length(unique(allmajors))>10){
-    majtab <- gg[c(2:11)]} else {majtab<-gg[-1]}
+  
+#if (length(unique(allmajors))>10){
+#    majtab <- gg[c(2:11)]} else {majtab<-gg[-1]}
 
+  #Get rid of the NAs
+  e <- names(gg) != "NA's"
+  gg <- gg[e]
+  
+  if (length(unique(allmajors)) > 9)
+  {
+    majtab <- gg[1:10]
+  }
+  else 
+  {
+    majtab <- gg
+  }
+  
 length(unique(allmajors))
 
 if (length(unique(allmajors))>1){
