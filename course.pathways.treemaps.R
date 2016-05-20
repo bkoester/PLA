@@ -326,9 +326,9 @@ basic.major.treemap <- function(sr,sc,SUBJECT,CATALOG_NBR,SUBNAME="ALL",
   }
   
   out <- data.frame(major,division,grade,grade_penalty,freq)
+  View(out)
   e   <- out$grade > 2.5 & out$grade < 4.0
   out <- out[which(e),]
-  
   
   
   if (PDF == FALSE){treemap(out,c("division","major"),vSize='freq',palette='Spectral',overlap.labels=1,
