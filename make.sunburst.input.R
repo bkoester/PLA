@@ -1,9 +1,23 @@
-#sunburst input
+######################################################################################
+#1) How do students "flow" through a major: which courses do they take and when?
+#
+#FUNCTION: make.sunburst.input.R
+#PURPOSE : For a given major and courselist, create an input table for the D3 sunburst functions.
+#INPUTS  : sr - student record table
+#          sc - student record table
+#          SUBJECT - select all courses from this SUBJECT for analysis.
+#          MAJ - which major to analyze.
+#          NON - if set to TRUE, this will analyze ALL courses NOT in the SUBJECT.
+#OUTPUTS : Returns to session/writes sunburst table to specified directory.
+#EXAMPLE: out <- make.sunburst.input(sr,sc,SUB='PHYSICS',MAJ='Physics BS')
+#Notes: If NON=TRUE, this cuts on courses with enrollments > 100. NON=FALSE: course enrollment must be > 5.
+#####################################################################################
 make.sunburst.input <- function(sr,sc,SUB='PHYSICS',MAJ='Physics BS',ORDERED=FALSE,TERM=TRUE,NON=FALSE)
 {
   #sr <- read.delim("/Users/bkoester/Box Sync/ART.PIPELINE/student.record.6.Sept.2015.preMOOC.tab")
   #sc <- read.delim("/Users/bkoester/Box Sync/ART.PIPELINE/student.course.6.Sept.2015.preMOOC.tab")
   
+  #Need to comment, describe this section still.
   otype <- 'ORDERED'
   if (ORDERED == FALSE){otype <- 'UNORDERED'}
   if (TERM == TRUE){otype <- 'TERM'}
@@ -11,8 +25,11 @@ make.sunburst.input <- function(sr,sc,SUB='PHYSICS',MAJ='Physics BS',ORDERED=FAL
   oname <- paste(SUB,gsub(" ","",MAJ),otype,'csv',sep=".",collapse="")
   oname <- gsub("&","",oname)
   
+  #cut on enrollment
   if (NON == TRUE){ecut <- 100}
   if (NON == FALSE){ecut <- 5}
+  
+  #Build the course matrix that we will convert to sunburst format.
   out <- build.course.matrix(sr,sc,SUB=SUB,MAJ=MAJ,NON=NON,AGG_TERM=TRUE,ENROLL=ecut)
   nst <- length(out$ANONID)
   out <- out[,!names(out) %in% c("ANONID")]
@@ -20,10 +37,12 @@ make.sunburst.input <- function(sr,sc,SUB='PHYSICS',MAJ='Physics BS',ORDERED=FAL
   seq        <- mat.or.vec(nst,1)
   ncrse      <- length(names(out))
   CNAMES     <- names(out) 
-  term.seq   <- mat.or.vec(nst,12)  #term-by-term tracking
+  #for each of 12 possible terms for each student, fill this matrix in with the courses taken that term.
+  #NONE will be entered by default.
+  term.seq   <- mat.or.vec(nst,12)
   term.seq[] <- 'NONE'
   
-  for (i in 1:nst)
+  for (i in 1:nst)   #looping over the students
   {
     flag <- 0
     len  <- 0
@@ -45,7 +64,7 @@ make.sunburst.input <- function(sr,sc,SUB='PHYSICS',MAJ='Physics BS',ORDERED=FAL
     sub  <- as.numeric(sub)
     ncrse <- length(sub)
     
-    for (j in 1:ncrse)
+    for (j in 1:ncrse) #looping over each of their courses
     {
       
       if (!is.na(sub[j]) & flag == 1)
@@ -110,6 +129,7 @@ make.sunburst.input <- function(sr,sc,SUB='PHYSICS',MAJ='Physics BS',ORDERED=FAL
     }
   }
   
+  #tabulate and aggregate the different orderings and output!
   col2 <- as.numeric(summary(as.factor(seq),max=length(seq)))
   col1 <- names(summary(as.factor(seq),max=length(seq)))
   seq  <- data.frame(col1,col2)
@@ -118,7 +138,20 @@ make.sunburst.input <- function(sr,sc,SUB='PHYSICS',MAJ='Physics BS',ORDERED=FAL
   return(seq)
   
 }
-
+###############################################
+#FUNCTION: build.course.matrix.R
+#PURPOSE : Fill in a student course-by-term matrix 
+#          --rows: the student
+#          --column: courses. Each cells contain the index (1-12) the student took the term.
+#INPUTS  : sr - student record table
+#          sc - student record table
+#          SUBJECT - select all courses from this SUBJECT for analysis.
+#          MAJ - which major to analyze.
+#          NON - if set to TRUE, this will analyze ALL courses NOT in the SUBJECT.
+#OUTPUTS : Returns to session/writes sunburst table to specified directory.
+#EXAMPLE: out <- make.sunburst.input(sr,sc,SUB='PHYSICS',MAJ='Physics BS')
+#Notes: If NON=TRUE, this cuts on courses with enrollments > 100. NON=FALSE: course enrollment must be > 5.
+#####################################################################################
 build.course.matrix <- function(sr,sc,SUB='PHYSICS',MAJ='Physics BS',NON=FALSE,ENROLL=0,AGG_TERM=TRUE)
 {
   
@@ -232,6 +265,9 @@ build.course.matrix <- function(sr,sc,SUB='PHYSICS',MAJ='Physics BS',NON=FALSE,E
   return(out)
 }
 
+
+#This is a simple function computes total enrollment by course over all terms for courses in the
+#input data set.
 trim.course.enrollment <- function(data)
 {
   nid        <- length(data$CRSE_ID[!duplicated(data$CRSE_ID)])
@@ -256,6 +292,7 @@ trim.course.enrollment <- function(data)
   
 }  
 
+#This indexs student terms (1-12)
 number.student.terms <- function(data)
 {
   #for each student, go in and number the terms

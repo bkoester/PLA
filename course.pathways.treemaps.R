@@ -250,9 +250,9 @@ basic.major.treemap <- function(sr,sc,SUBJECT,CATALOG_NBR,SUBNAME="ALL",
   
   #Now massage 
   DDIV <- read.dept.division()
+  
   data <- data[,names(data) %in% c("EMPLID","SUBJECT","CATALOG_NBR","GRD_PTS_PER_UNIT","GPAO",
                                    "MAJOR1_DEPT","MAJOR2_DEPT","MAJOR3_DEPT")]
-  View(data)
   if (MAJOR_NUM == 1)
   {
     data <- merge(data,DDIV,by.x='MAJOR1_DEPT',by.y='DEPT',all.x=TRUE)
@@ -326,7 +326,6 @@ basic.major.treemap <- function(sr,sc,SUBJECT,CATALOG_NBR,SUBNAME="ALL",
   }
   
   out <- data.frame(major,division,grade,grade_penalty,freq)
-  View(out)
   e   <- out$grade > 2.5 & out$grade < 4.0
   out <- out[which(e),]
   
