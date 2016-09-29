@@ -1,0 +1,106 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <title>Course Persistence</title>
+  <meta name="description" content="website description" />
+  <meta name="keywords" content="website keywords, website keywords" />
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+  <link rel="stylesheet" type="text/css" href="css/style.css" />
+  <!-- modernizr enables HTML5 elements and feature detects -->
+  <script type="text/javascript" src="js/modernizr-1.5.min.js"></script>
+</head>
+
+<body>
+  <div id="main">
+    <header>
+      <div id="logo">
+        <div id="logo_text">
+          <!-- class="logo_colour", allows you to change the colour of the text -->
+          <h1><a href="index.html">Course<span class="logo_colour">_Persistence</span></a></h1>
+          <h2>Which students persist to the next course in a sequence?</h2>
+        </div>
+      </div>
+      <!-- Import the navigation menu -->
+      <nav id="navMenu">
+        <div id="menu_container">
+           <ul class="sf-menu" id="nav">
+           </ul>
+         </div>
+       </nav>
+    </header>
+    <div id="site_content">
+      <div id="sidebar_container">
+        <div class="sidebar"> <!-- we can put a bunch oif these in the sidebar container. -->
+          <h3>R code</h3>
+          <ul>
+            <li><a href="https://github.com/bkoester/PLA/course.persistence.module.R">courses.persistent.module.R</a></li>
+            <li><a href="https://github.com/bkoester/PLA/wiki">PLA wiki</a></li>
+          </ul>
+        </div>
+        <div class="sidebar">
+          <h3>Data</h3>
+          <ul>
+            <li><a href="https://github.com/bkoester/PLA/student.course.csv">student.course.csv</a></li>
+            <li><a href="https://github.com/bkoester/PLA/student.record.csv">student.record.csv</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="content">
+          <h1>Background</h1>
+          <p>Some fraction of students take a course and do not continue on to the next in a natural sequence.
+             This may be their original intent: some engineering majors require only one semester of physics,
+             and thus those majors will not continue to the second semester regardless. Others however, may not
+            continue for other reasons, for instance the grade they received. </p>
+
+            <h1>Analysis</h1>
+            <p>Assigning causes to these actions is difficult but we can gain some first insights by looking at
+            the fraction of males and females that persist from Physics 140 (Physics I) to Physics 240 (Physics II)
+            as a function of the grade they received in the first course (Physics 140):</p>
+            <img src="images/physics140.240.persist.png"style="width:750px">
+            <p>A few things are apparent. First, the persistence fraction peaks at about 60% for individuals
+            with the highest grades in Physics 140, and this fraction decreases with decreasing grade. Second,
+            the persistence fraction is overall smaller for females, regardless of grade. As with
+            grade penalty, the <a href="https://github.com/bkoester/PLA/course.persistence.module.R">code</a> and
+            student <a href="https://github.com/bkoester/PLA/student.course.csv">course</a> and
+            <a href="https://github.com/bkoester/PLA/student.record.csv">record</a> tables are all part of
+            the Practical Learning Analytics MOOC and may downloaded and tested.
+
+            <h1>Discussion</h1>
+            <p>Why is this? Are students
+            responding and making decisions based on grades? Are there any unexpected differences
+             between the male and female populations in these courses? </p>
+    </div>
+  </div>
+    <div id="scroll">
+      <a title="Scroll to the top" class="top" href="#"><img src="images/top.png" alt="top" /></a>
+    </div>
+    <footer>
+      <!-- <p><img src="images/twitter.png" alt="twitter" />&nbsp;<img src="images/facebook.png" alt="facebook" />&nbsp;<img src="images/rss.png" alt="rss" /></p>
+      <p><a href="index.html">Home</a> | <a href="examples.html">Examples</a> | <a href="page.html">A Page</a> | <a href="another_page.html">Another Page</a> | <a href="contact.php">Contact Us</a></p>-->
+      <p>Copyright &copy; CSS3_contrast | <a href="http://www.css3templates.co.uk">design from css3templates.co.uk</a></p>
+    </footer>
+  </div>
+  <!-- javascript at the bottom for fast page loading -->
+  <script type="text/javascript" src="js/jquery.js"></script>
+  <script type="text/javascript" src="js/jquery.easing-sooper.js"></script>
+  <script type="text/javascript" src="js/jquery.sooperfish.js"></script>
+  <script type="text/javascript" src="js/navBarScript.js"></script>
+  <script type="text/javascript">
+    $(document).ready(function() {
+      $('ul.sf-menu').sooperfish();
+      $('.top').click(function() {$('html, body').animate({scrollTop:0}, 'fast'); return false;});
+    });
+  </script>
+  <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-81739360-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+</body>
+</html>

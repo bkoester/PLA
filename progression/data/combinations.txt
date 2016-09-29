@@ -1,0 +1,6 @@
+CHEM.Chemistry.TERM.csv
+ECON.EconomicsBS.TERM.csv
+MATH.Mathematics.TERM.csv
+PHYSICS.Physics.TERM.csv
+PHYSICS.PhysicsBS.TERM.csv
+PSYCH.PsychologyBS.TERM.csv

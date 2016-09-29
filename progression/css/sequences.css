@@ -1,0 +1,92 @@
+body {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  background-color: #fff;
+  width: 960px;
+  height: 700px;
+  margin-top: 10px;
+}
+thead {
+  font-weight: bold;
+  font-size: 20px;
+}
+
+table {
+background-color: #D3D3D3;
+
+}
+
+#summaryStats {
+  clear: both;
+  width: 950px;
+  margin-top: 25px;
+}
+#histSummary1 {
+  float: left;
+  width: 250px;
+}
+#histSummary2 {
+  float: left;
+  width: 250px;
+}
+#main {
+  float: left;
+  width: 750px;
+  font-size: 12px;
+  margin-top: 50px;
+}
+
+#sidebar {
+  float: right;
+  width: 200px;
+  margin-top: 100px;
+}
+
+#sequence {
+  width: 600px;
+  height: 70px;
+}
+
+#legend {
+  padding: 10px 0 0 3px;
+}
+
+#sequence text, #legend text {
+  font-weight: 600;
+  fill: #fff;
+}
+
+#chart {
+  position: relative;
+}
+
+#chart path {
+  stroke: #fff;
+}
+
+#explanation {
+  position: absolute;
+  top: 260px;
+  left: 305px;
+  width: 140px;
+  text-align: center;
+  color: #666;
+  z-index: -1;
+}
+
+#percentage {
+  font-size: 2.5em;
+}
+#subject{
+  font-size: 20px;;
+}
+#major {
+  font-size: 20px;;
+}
+#order{
+  font-size: 20px;;
+}
+#numStud {
+  font-size: 20px;
+}

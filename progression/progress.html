@@ -1,0 +1,125 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <title>Progress to Major</title>
+  <meta name="description" content="website description" />
+  <meta name="keywords" content="website keywords, website keywords" />
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+  <link rel="stylesheet" type="text/css" href="css/style.css" />
+  <!-- modernizr enables HTML5 elements and feature detects -->
+  <script type="text/javascript" src="js/modernizr-1.5.min.js"></script>
+</head>
+
+<body>
+  <div id="main">
+    <header>
+      <div id="logo">
+        <div id="logo_text">
+          <!-- class="logo_colour", allows you to change the colour of the text -->
+          <h1><a href="index.html">Progress<span class="logo_colour">_Major</span></a></h1>
+          <h2>How do majors move through the curriculum?"</h2>
+        </div>
+      </div>
+      <!-- Import the navigation menu -->
+      <nav id="navMenu">
+        <div id="menu_container">
+           <ul class="sf-menu" id="nav">
+           </ul>
+         </div>
+       </nav>
+    </header>
+    <div id="site_content">
+      <div id="sidebar_container">
+          <div class="sidebar"> <!-- we can put a bunch oif these in the sidebar container. -->
+            <h3>R and D3js Tools</h3>
+            <ul>
+              <li><a href="https://github.com/bkoester/PLA/make.sunburst.input.R">make.sunburst.input.R</a></li>
+              <li><a href="https://bl.ocks.org/kerryrodden/7090426">D3js/Sunburst</a></li>
+              <li><a href="https://bost.ocks.org/mike/sankey/">Sankey Diagrams</a></li>
+            </ul>
+          </div>
+          <div class="sidebar">
+            <h3>Data</h3>
+            <ul>
+              <li><a href="https://github.com/bkoester/PLA/student.course.csv">student.course.csv</a></li>
+              <li><a href="https://github.com/bkoester/PLA/student.record.csv">student.record.csv</a></li>
+              <li><a href="sequences/sunburst.html">Synthetic Sunburst Diagram</a></li>
+            </ul>
+          </div>
+        </div>
+      <div class="content">
+          <h1>Background</h1>
+          <p>The flow of students through courses contained within major is of interest to both students
+             and educators. Students may wish to know common course sequences taken by their predecessors:
+             are there many ways to complete the major, or are there paths that lead to better outcomes?
+             Educators meanwhile may seek to understand the level of preparation students have reached
+             as they progress to courses later in the curriculum: are students using introductory course
+             locally, or transferring them in? Are they skipping recommended courses?</p>
+          <h1>Analysis</h1>
+          <p><a href="https://bost.ocks.org/mike/sankey/">Sankey diagrams</a>
+            and <a href="https://bl.ocks.org/kerryrodden/7090426">sunburst diagrams</a> both give general overviews of this flow. Below is
+            a screenshot of a sunburst diagram that shows the flow of physics majors through the University
+            of Michigan's Physics Department (to preserve anonomity we only show screenshots, and an interactive
+            sunburst diagram with synthetic data follows the description of this animation):</p>
+          <p><img src="images/physics.path.gif"style="width:500px"><p>
+          <p>This GIF demostrates how, as a user drags the cursor from inner rings to outer rings, arcs light up
+            and "breadcrumb trail" is recorded in the right margin
+            (download images the individual terms:
+            <a href="images/physics.term1.png">1</a>,
+            <a href="images/physics.term2.png">2</a>,
+            <a href="images/physics.term3.png">3</a>, or
+            <a href="images/physics.term4.png">4</a>)
+            The inner most ring gives a break down
+            of Physics courses taken by first term Physics majors. It reveals that 52.9% of physics majors take
+            NO physics classes (none) their first term. A fraction of these students go on to take Physics 140/141
+            their second term (8.75% of all physics majors). A fraction of these students continue to Physics 240/241
+            in their third term (5.39% of the total), and most of these student continue to 340/341 the very next term
+            (4.38% of all physics majors). Thus we can say that 4.38% of our majors take no physics their first term
+            and then complete the introductory sequence the next three consecutive terms.
+           </p>
+
+           <p>Using PLA-MOOC <a href="https://github.com/bkoester/PLA/student.record.csv">student record</a>
+             and <a href="https://github.com/bkoester/PLA/student.course.csv">student course</a> tables,
+             our <a href="https://github.com/bkoester/PLA/make.sunburst.input.R">custom R code</a>, and modifications to
+              D3 sunburst scripts (see the source for the page), we can create a fully interactive
+             <a href="sequences/sunburst.html">sunburst diagram</a> where we explain the layout in more detail. Additional
+             work in progress involves the use of <a href="https://bost.ocks.org/mike/sankey/">Sankey Diagrams</a>
+             to study the flow of students through majors; for our uses, it seems that these will require a
+             more substantial rewrite or reorganization of existing libraries.</p>
+
+
+    </div>
+  </div>
+    <div id="scroll">
+      <a title="Scroll to the top" class="top" href="#"><img src="images/top.png" alt="top" /></a>
+    </div>
+    <footer>
+      <!-- <p><img src="images/twitter.png" alt="twitter" />&nbsp;<img src="images/facebook.png" alt="facebook" />&nbsp;<img src="images/rss.png" alt="rss" /></p>
+      <p><a href="index.html">Home</a> | <a href="examples.html">Examples</a> | <a href="page.html">A Page</a> | <a href="another_page.html">Another Page</a> | <a href="contact.php">Contact Us</a></p>-->
+      <p>Copyright &copy; CSS3_contrast | <a href="http://www.css3templates.co.uk">design from css3templates.co.uk</a></p>
+    </footer>
+  </div>
+  <!-- javascript at the bottom for fast page loading -->
+  <script type="text/javascript" src="js/jquery.js"></script>
+  <script type="text/javascript" src="js/jquery.easing-sooper.js"></script>
+  <script type="text/javascript" src="js/jquery.sooperfish.js"></script>
+  <script type="text/javascript" src="js/navBarScript.js"></script>
+  <script type="text/javascript">
+    $(document).ready(function() {
+      $('ul.sf-menu').sooperfish();
+      $('.top').click(function() {$('html, body').animate({scrollTop:0}, 'fast'); return false;});
+    });
+  </script>
+  <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-81739360-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+</body>
+</html>

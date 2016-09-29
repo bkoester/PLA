@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Sequences sunburst</title>
+    <script src="js/d3.v3.js"></script>
+    <script type="text/javascript" src="js/listFiles.js"></script>
+      <script type="text/javascript" src="js/sequences.js"></script>
+      <script>
+      listFiles();
+      </script>
+    <link rel="stylesheet" type="text/css"
+      href="https://fonts.googleapis.com/css?family=Open+Sans:400,600">
+    <link rel="stylesheet" type="text/css" href="css/sequences.css"/>
+  </head>
+
+  <body onload='plotSequence()'>
+    <h1>Progression through a Major</h1>
+    <h2><a href="../progress.html">Return</a></h2>
+    <p>Select a Course/Major combination from the dropdown. <b>PHYSICS.Physics.TERM.csv</b> is a good start.
+       This approximates similar plots we've made with real data.
+       Then mouse-over the diagram to explore the paths students take through a set of courses. The innermost
+       ring represents courses in the SUBJECT taken by first term students, the next ring represents the second
+       term, etc. This surveys all courses within the subject included in the PLA-MOOC data set. The percentage
+       of students in this major following this path is given in the middle. The courses along this path
+       light up on the right side on the breadcrumb trail.</p>
+       <ol>
+       <li>Percentages represent the total number of ALL majors that followed this path.
+       <li>A slash separates multiple courses taken in the same term.
+       <li> "NONE" indicates students that took no course in this subject in a particular term.
+       <li>We allow for up to 12 terms (12 rings), but because the PLA-MOOC data contains only large courses, most of these will be "NONE".
+       </ol>
+       <p>SUBJECT/Major:
+       <select id="selectDept" onchange="plotSequence()">
+           <option>data/PHYSICS.Physics.TERM.csv</option>
+       </select>
+       Minimum Term (0-11):
+       <input id = "innerTerm" type="number" min="0" max="11" value="0" onchange="plotSequence()">
+       Maximum Term (1-12):
+       <input id = "outerTerm" type="number" min="1" max="12" value="4" onchange="plotSequence()">
+       </p>
+
+
+     <script type="text/javascript" src="js/listFiles.js"></script>
+
+    <div id="main">
+
+      <div id="subject"></div>
+      <div id="major"></div>
+      <div id="order"></div>
+      <div id="numStud"></div>
+
+      <div id="sequence"></div>
+      <!--<div id="sidebar"></div> -->
+      <div id="chart">
+        <div id="explanation" style="visibility: hidden;">
+          <span id="percentage"></span><br/>
+          of students follow this sequence.
+        </div>
+      </div>
+    </div>
+   <div id="sidebar">
+     <h4> Course Path Description</h4>
+     <p>Mouse-over the diagram to track, view cumulative percentages.</p>
+     <hr>
+
+      <div id="legend"></div>
+    </div>
+
+    <script type="text/javascript">
+      // Hack to make this example display correctly in an iframe on bl.ocks.org
+      d3.select(self.frameElement).style("height", "700px");
+  </script>
+
+  <!-- this isn't shown, it's just a dummy to aid in reading combinations.txt with javascript -->
+  <iframe id="frmFile" src="data/combinations.txt" onload="listFiles();" style="display: none;"></iframe>
+  </body>
+</html>
