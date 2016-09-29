@@ -2,17 +2,21 @@
 #1) How do students "flow" through a major: which courses do they take and when?
 #
 #FUNCTION: make.sunburst.input.R
-#PURPOSE : For a given major and courselist, create an input table for the D3 sunburst functions.
+#PURPOSE : For a given major and courselist, create an input table for the D3 sunburst functions. The
+#          table written to disk is an input for the D3 functions.
 #INPUTS  : sr - student record table
 #          sc - student record table
 #          SUBJECT - select all courses from this SUBJECT for analysis.
 #          MAJ - which major to analyze.
 #          NON - if set to TRUE, this will analyze ALL courses NOT in the SUBJECT.
-#OUTPUTS : Returns to session/writes sunburst table to specified directory.
+#          DIR - the output directory, CWD by default.
+#OUTPUTS : Returns to session/writes sunburst table to specified directory. Also returns the table to 
+#          current session (set to 'out' in EXAMPLE below)
 #EXAMPLE: out <- make.sunburst.input(sr,sc,SUB='PHYSICS',MAJ='Physics BS')
 #Notes: If NON=TRUE, this cuts on courses with enrollments > 100. NON=FALSE: course enrollment must be > 5.
+#
 #####################################################################################
-make.sunburst.input <- function(sr,sc,SUB='PHYSICS',MAJ='Physics BS',ORDERED=FALSE,TERM=TRUE,NON=FALSE)
+make.sunburst.input <- function(sr,sc,SUB='PHYSICS',MAJ='Physics BS',DIR='CWD',ORDERED=FALSE,TERM=TRUE,NON=FALSE)
 {
   #sr <- read.delim("/Users/bkoester/Box Sync/ART.PIPELINE/student.record.6.Sept.2015.preMOOC.tab")
   #sc <- read.delim("/Users/bkoester/Box Sync/ART.PIPELINE/student.course.6.Sept.2015.preMOOC.tab")
@@ -133,8 +137,16 @@ make.sunburst.input <- function(sr,sc,SUB='PHYSICS',MAJ='Physics BS',ORDERED=FAL
   col2 <- as.numeric(summary(as.factor(seq),max=length(seq)))
   col1 <- names(summary(as.factor(seq),max=length(seq)))
   seq  <- data.frame(col1,col2)
-  dir  <- '/Users/bkoester/Google Drive/code/REBUILD/course_patterns/bkoester.github.io/sequences/data/'
-  write.table(seq,file=paste(dir,oname,sep=""),col.names=FALSE,quote=FALSE,sep=",",row.names=FALSE)
+  #DIR  <- '/Users/bkoester/Google Drive/code/REBUILD/course_patterns/bkoester.github.io/sequences/data/'
+  if (DIR != 'CWD')
+    {
+    outpath <- paste(DIR,oname,sep="")
+  }
+  else
+  {
+    outpath <- oname
+  }
+  write.table(seq,file=outpath,col.names=FALSE,quote=FALSE,sep=",",row.names=FALSE)
   return(seq)
   
 }
@@ -181,6 +193,7 @@ build.course.matrix <- function(sr,sc,SUB='PHYSICS',MAJ='Physics BS',NON=FALSE,E
     sc <- sc[which(f),]
   }
   
+  #Keeping this commented-out stuff around until I'm settled on this method of recording division.
   if (SUB == 'DIV')
   {
     
@@ -266,8 +279,9 @@ build.course.matrix <- function(sr,sc,SUB='PHYSICS',MAJ='Physics BS',NON=FALSE,E
 }
 
 
-#This is a simple function computes total enrollment by course over all terms for courses in the
-#input data set.
+#This computes total enrollment by course over all terms for courses in the
+#input data set. It allows one to restrict courses considered by enrollment, with ENROLL=TRUE
+#in the main function.
 trim.course.enrollment <- function(data)
 {
   nid        <- length(data$CRSE_ID[!duplicated(data$CRSE_ID)])
@@ -292,7 +306,8 @@ trim.course.enrollment <- function(data)
   
 }  
 
-#This indexs student terms (1-12)
+#This indexs student terms (1-12). That is, it counts the number 
+#of terms enrolled in classes (even summer classes!) and indexes them.
 number.student.terms <- function(data)
 {
   #for each student, go in and number the terms
@@ -332,9 +347,10 @@ number.student.terms <- function(data)
   return(data)
 }
 
+# A wrapper to run a bunch of major/course combinations.
+# Leaving in the various examples for reference.
 run.all.sunburst <- function(sr,sc)
 {
-  
   
   #grep('Chem',names(summary(sr$MAJOR1_DESCR)),value=TRUE)
   #STEM combinations
