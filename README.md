@@ -1,5 +1,5 @@
 # PLA (Practical Learning Analytics)
-Code and resources for the Pracitcal Learning Analytics online course offered at Michigan, all in R, all in the top directory. Code is all desgined to run student record and student course tables provided. Larger pieces of code (e.g. grade.penalty.module.R) are broken into separate files. More details are given in the wiki (link on the right side).
+Code and resources for the Pracitcal Learning Analytics online course offered at Michigan, all in R, all in the top directory. Code is all desgined to run student record and student course tables provided. Larger pieces of code (e.g. grade.penalty.module.R) are broken into separate files. More details are given in the wiki (link on the right side). Subdirectories contain projects in developement.
 
 `grade.penalty.module.R`: Grade penalty analysis. Requires the optmatch package.
 
