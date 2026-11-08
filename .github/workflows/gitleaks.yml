@@ -1,0 +1,223 @@
+# Secret scanning: gitleaks over the full history on every push, pull request and weekly.
+# Each distinct leaked credential gets one issue labelled rotate-credential, assigned to the
+# repo owner. Closing the issue marks the credential handled. The job fails while any detected
+# credential has an open issue. Values are never printed or posted; public repos get issues
+# without file paths. All repos: https://github.com/issues?q=is%3Aopen+label%3Arotate-credential+user%3Abkoester
+name: gitleaks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 11 * * 1"  # Mondays, 11:17 UTC
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: gitleaks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GITLEAKS_VERSION: "8.28.0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks (checksum verified)
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "$tarball" "$base/$tarball"
+          curl -sSfL -o sums.txt "$base/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          grep " $tarball$" sums.txt | sed 's/ \+/  /' | sha256sum -c -
+          tar xzf "$tarball" gitleaks
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+      - name: Scan full history
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/gitleaks.toml" <<'GITLEAKS_TOML'
+          title = "gitleaks defaults plus hardcoded passwords and Terraform state"
+
+          [extend]
+          useDefault = true
+
+          [[rules]]
+          id = "hardcoded-password"
+          description = "Password assigned as a string literal"
+          regex = '''(?i)\b(?:password|passwd|pwd)\s*[=:]\s*["']([^"'\s]{8,})["']'''
+          secretGroup = 1
+          entropy = 3.0
+          keywords = ["password", "passwd", "pwd"]
+
+          [[rules.allowlists]]
+          description = "Placeholders"
+          regexTarget = "secret"
+          regexes = ['''(?i)^(?:x+|\*+|<[^>]+>|\$\{[^}]+\}|your[_-]?password.*|change[_-]?me.*|example.*|password.*|placeholder.*)$''']
+          GITLEAKS_TOML
+          gitleaks git . --config "$RUNNER_TEMP/gitleaks.toml" --report-format json \
+            --report-path "$RUNNER_TEMP/report.json" --exit-code 0 --no-banner --log-level error
+
+      - name: Track credentials as issues
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/track.py" <<'TRACK_PY'
+          """Turn a gitleaks JSON report into one GitHub issue per distinct leaked credential.
+
+          Each credential gets a stable id (a salted hash of the secret, or of rule + path for
+          path-only rules). An issue carrying that id, open or closed, is never duplicated: closing
+          an issue means "handled". The job fails while any detected credential has an open issue.
+
+          No secret, or any part of one, is ever printed or posted. In public repos the issue says
+          only what kind of credential was found, because issue bodies and logs there are public.
+
+          Env: REPORT, REPO (owner/name), OWNER, PUBLIC ("true"/"false"), DRY_RUN ("1" to only print).
+          """
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+
+          LABEL = "rotate-credential"
+          REPORT = os.environ["REPORT"]
+          REPO = os.environ["REPO"]
+          OWNER = os.environ.get("OWNER", REPO.split("/")[0])
+          DRY = os.environ.get("DRY_RUN") == "1"
+          GIT_DIR = os.environ.get("GIT_DIR_FOR_TRACK")  # tests point this at a bare mirror
+
+
+          def gh(*args, capture=True):
+              return subprocess.run(["gh", *args, "--repo", REPO], check=True, text=True,
+                                    capture_output=capture).stdout
+
+
+          def repo_is_public():
+              # Asked at run time: scheduled runs carry no repository details in their event payload.
+              # If the answer can't be had, assume public, which posts the least.
+              if "PUBLIC" in os.environ:
+                  return os.environ["PUBLIC"].lower() == "true"
+              try:
+                  out = subprocess.run(["gh", "repo", "view", REPO, "--json", "visibility", "-q", ".visibility"],
+                                       check=True, text=True, capture_output=True).stdout.strip()
+                  return out.upper() != "PRIVATE"
+              except Exception:
+                  return True
+
+
+          PUBLIC = repo_is_public()
+
+
+          def tracked_paths():
+              cmd = ["git"] + (["--git-dir", GIT_DIR] if GIT_DIR else []) + ["ls-tree", "-r", "--name-only", "HEAD"]
+              out = subprocess.run(cmd, capture_output=True, text=True)
+              return set(out.stdout.split()) if out.returncode == 0 else set()
+
+
+          def fingerprint(f):
+              material = f.get("Secret") or f"{f['RuleID']}\0{f['File']}"
+              return hashlib.sha256(f"{REPO}\0{material}".encode()).hexdigest()[:12]
+
+
+          findings = json.load(open(REPORT)) if os.path.getsize(REPORT) else []
+
+          # gitleaks skips binary files, and a saved Terraform plan is a zip holding a full copy of the
+          # state, so look for state and plan files by name across all history.
+          STATE_FILE = re.compile(r"(?i)(?:^|/)(?:tfplan|[^/]+\.tfplan|[^/]+\.tfstate(?:\.backup)?)$")
+          log_cmd = ["git"] + (["--git-dir", GIT_DIR] if GIT_DIR else []) + [
+              "log", "--all", "--diff-filter=A", "--format=@%h %cs", "--name-only"]
+          commit = date = ""
+          for line in subprocess.run(log_cmd, capture_output=True, text=True).stdout.splitlines():
+              if line.startswith("@"):
+                  commit, date = line[1:].split(" ", 1)
+              elif line and STATE_FILE.search(line):
+                  findings.append({"RuleID": "terraform-state-or-plan", "File": line, "Commit": commit, "Date": date,
+                                   "Description": "Terraform state or saved plan committed; a saved plan carries a full copy of the state"})
+
+          groups = {}
+          for f in findings:
+              g = groups.setdefault(fingerprint(f), {"rule": f["RuleID"], "desc": f.get("Description", ""),
+                                                     "files": set(), "commits": set(), "dates": set()})
+              g["files"].add(f["File"])
+              g["commits"].add(f["Commit"][:8])
+              g["dates"].add((f.get("Date") or "")[:10])
+
+          if not groups:
+              print("gitleaks: no credentials found.")
+              sys.exit(0)
+
+          head = tracked_paths()
+          existing = {}
+          if not DRY:
+              gh("label", "create", LABEL, "--color", "B60205", "--force",
+                 "--description", "A leaked credential that needs regenerating")
+              issues = json.loads(gh("issue", "list", "--label", LABEL, "--state", "all", "--limit", "1000",
+                                     "--json", "number,state,body"))
+              for i in issues:
+                  for line in (i.get("body") or "").splitlines():
+                      if line.startswith("<!-- gitleaks-id:"):
+                          existing[line.split(":", 1)[1].strip(" ->")] = (i["number"], i["state"])
+
+          CHECKLIST = """- [ ] Regenerate the credential with the provider (or delete it if it's no longer used)
+          - [ ] Store the new value outside git (Parameter Store or an untracked env file) and update what uses it
+          - [ ] Remove it from the current code
+          - [ ] Purge it from history (`git filter-repo`), or decide history is acceptable because it's rotated
+          - [ ] Close this issue (closing stops alerts for this credential)"""
+
+          still_open, created = [], []
+          for fid, g in sorted(groups.items()):
+              if fid in existing:
+                  number, state = existing[fid]
+                  if state == "OPEN":
+                      still_open.append(number)
+                  continue
+              dates = sorted(d for d in g["dates"] if d)
+              in_head = any(p in head for p in g["files"])
+              if PUBLIC:
+                  title = f"Rotate a leaked credential ({g['rule']})"
+                  body = (f"<!-- gitleaks-id:{fid} -->\n"
+                          f"The weekly gitleaks scan found a credential of type **{g['rule']}** in this repo's history.\n\n"
+                          "Details are deliberately not posted here because this repo is public. To see where it is, "
+                          "run in a local clone:\n\n```\ngitleaks git . -v --redact\n```\n\n" + CHECKLIST)
+              else:
+                  files = sorted(g["files"])
+                  title = f"Rotate leaked credential: {g['rule']} in {files[0]}"
+                  body = (f"<!-- gitleaks-id:{fid} -->\n"
+                          f"gitleaks found a credential of type **{g['rule']}** ({g['desc']}).\n\n"
+                          f"| | |\n| --- | --- |\n"
+                          f"| Files | {', '.join(f'`{p}`' for p in files[:10])}{' …' if len(files) > 10 else ''} |\n"
+                          f"| Still in current code | {'yes' if in_head else 'no, history only'} |\n"
+                          f"| Commits | {len(g['commits'])} (first {dates[0] if dates else '?'}, last {dates[-1] if dates else '?'}) |\n\n"
+                          "The value is never posted. To see it locally: `gitleaks git . -v`\n\n" + CHECKLIST)
+              if DRY:
+                  print(f"[dry-run] would open: {title}  (id {fid}, in current code: {in_head})")
+                  created.append(fid)
+                  continue
+              url = gh("issue", "create", "--title", title, "--body", body, "--label", LABEL,
+                       "--assignee", OWNER).strip()
+              created.append(url)
+              print(f"Opened {url}")
+
+          if created or still_open:
+              print(f"gitleaks: {len(created)} new and {len(still_open)} still-open credential issue(s). "
+                    f"Track them at https://github.com/issues?q=is%3Aopen+label%3A{LABEL}+user%3A{OWNER}")
+              sys.exit(1)
+          print("gitleaks: every detected credential is tracked in a closed issue.")
+          TRACK_PY
+          REPORT="$RUNNER_TEMP/report.json" python3 "$RUNNER_TEMP/track.py"
